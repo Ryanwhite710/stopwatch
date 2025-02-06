@@ -10,8 +10,8 @@ export default function StopwatchWithLap() {
   const startStopwatch = () => {
     setIsRunning(true);
     timerRef.current = setInterval(() => {
-      setTime(prevTime => prevTime + 1);
-    }, 1000);
+      setTime(prevTime => prevTime + 10);
+    }, 10);
   };
 
   const stopStopwatch = () => {
@@ -32,10 +32,12 @@ export default function StopwatchWithLap() {
     setLaps(prevLaps => [time, ...prevLaps]);
   };
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  const formatTime = (milliseconds: number) => {
+    const hours = Math.floor(milliseconds / 3600000);
+    const mins = Math.floor((milliseconds % 3600000) / 60000);
+    const secs = Math.floor((milliseconds % 60000) / 1000);
+    const ms = milliseconds % 1000;
+    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}'${secs.toString().padStart(2, '0')}''${ms.toString().padStart(3, '0')}`;
   };
 
   return (
