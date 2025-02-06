@@ -37,7 +37,7 @@ export default function StopwatchWithLap() {
     const mins = Math.floor((milliseconds % 3600000) / 60000);
     const secs = Math.floor((milliseconds % 60000) / 1000);
     const ms = milliseconds % 1000;
-    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}'${secs.toString().padStart(2, '0')}''${ms.toString().padStart(3, '0')}`;
+    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}'${secs.toString().padStart(2, '0')}.${ms.toString().padStart(3, '0')}`;
   };
 
   return (

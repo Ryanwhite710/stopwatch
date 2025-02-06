@@ -28,6 +28,12 @@ export default function TabLayout() {
         <AntDesign name={focused ? 'table' : 'database'} color={color} size={24} />
         )
       }} />
+    <Tabs.Screen name="template" options={{
+        title: 'Main',
+        tabBarIcon: ({color, focused}) => (
+        <Ionicons name={focused ? 'home-sharp' : 'home-outline'} color={color} size={24} />
+        )
+      }} />
     </Tabs>
   );
 }
