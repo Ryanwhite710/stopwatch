@@ -1,3 +1,4 @@
+import colors from '../constants/colors'; // Adjust the import path if needed
 import React, { useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, FlatList, TextInput, StyleSheet, ScrollView } from 'react-native';
 
@@ -113,23 +114,24 @@ export default function StopwatchWithLap() {
   );
 }
 
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#25292e',
+    backgroundColor: colors.background,
     padding: 20,
   },
   timer: {
     fontSize: 48,
-    color: '#fff',
+    color: colors.textPrimary,
     marginBottom: 20,
     textAlign: 'center',
   },
   processNameInput: {
-    color: '#fff',
+    color: colors.textPrimary,
     fontSize: 18,
     borderBottomWidth: 1,
-    borderBottomColor: '#555',
+    borderBottomColor: colors.border,
     padding: 5,
     marginBottom: 20,
     textAlign: 'center',
@@ -142,23 +144,23 @@ const styles = StyleSheet.create({
   button: {
     margin: 10,
     padding: 10,
-    backgroundColor: '#4CAF50',
+    backgroundColor: colors.primary,
     borderRadius: 5,
   },
   buttonReset: {
     margin: 10,
     padding: 10,
-    backgroundColor: '#F44336',
+    backgroundColor: colors.danger,
     borderRadius: 5,
   },
   buttonLap: {
     margin: 10,
     padding: 10,
-    backgroundColor: '#2196F3',
+    backgroundColor: colors.secondary,
     borderRadius: 5,
   },
   buttonText: {
-    color: '#fff',
+    color: colors.textPrimary,
     fontSize: 18,
   },
   processSection: {
@@ -166,42 +168,42 @@ const styles = StyleSheet.create({
   },
   processTitle: {
     fontSize: 22,
-    color: '#fff',
+    color: colors.textPrimary,
     marginBottom: 10,
     textAlign: 'center',
   },
   lapItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#333',
+    backgroundColor: colors.lapBackground,
     padding: 10,
     marginVertical: 5,
     borderRadius: 5,
   },
   lapId: {
     fontSize: 18,
-    color: '#fff',
+    color: colors.textPrimary,
     marginRight: 10,
   },
   lapNameInput: {
     flex: 1,
-    color: '#fff',
+    color: colors.textPrimary,
     fontSize: 18,
     borderBottomWidth: 1,
-    borderBottomColor: '#555',
+    borderBottomColor: colors.border,
     padding: 5,
   },
   lapTime: {
     fontSize: 18,
-    color: '#fff',
+    color: colors.textPrimary,
     marginHorizontal: 10,
   },
   lapNoteInput: {
     flex: 1,
-    color: '#fff',
+    color: colors.textPrimary,
     fontSize: 18,
     borderBottomWidth: 1,
-    borderBottomColor: '#555',
+    borderBottomColor: colors.border,
     padding: 5,
   },
 });
