@@ -1,14 +1,14 @@
-import colors from '../constants/colors'; // Adjust the import path if needed
+import colors from '../constants/colors'; 
 import React, { useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, FlatList, TextInput, StyleSheet, ScrollView } from 'react-native';
-import { router, Stack, useLocalSearchParams } from "expo-router";
+import { router, Stack } from "expo-router";
 import { useSQLiteContext } from "expo-sqlite";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function StopwatchWithLap() {
   const [isRunning, setIsRunning] = useState(false);
   const [time, setTime] = useState(0);
-  const [processes, setProcesses] = useState<Record<string, { id: number; time: number; name: string; note: string }[]>>({});
+  const [processes, setProcesses] = useState<Record<string, {process: string; instance: number; time: number; process_step: string; note: string }[]>>({});
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const lapIdRef = useRef(0);
   const [currentProcess, setCurrentProcess] = useState('Default Process');
@@ -34,12 +34,12 @@ export default function StopwatchWithLap() {
   const resetStopwatch = () => {
     // Check if there are unsaved laps
     if (!dataSaved && newData) {
-      // Prompt the user to save the data
+    // prompt the user to save the data
       alert('You have unsaved data. Please save before resetting.');
-      return; // Do not reset if there are unsaved changes
+      return; 
+    // Do not reset if there are unsaved changes
     }
-
-    // Reset the stopwatch only if there are no unsaved changes
+    //resets the stopwatch if all changes have been saved
     stopStopwatch();
     setTime(0);
     setProcesses({});
@@ -53,21 +53,21 @@ export default function StopwatchWithLap() {
       const updatedLaps = prevProcesses[currentProcess] || [];
       return {
         ...prevProcesses,
-        [currentProcess]: [{ id: lapIdRef.current++, time, name: `Lap ${updatedLaps.length + 1}`, note: '' }, ...updatedLaps],
+        [currentProcess]: [{ process: [currentProcess], instance: lapIdRef.current++, time, process_step: `Lap ${updatedLaps.length + 1}`, note: '' }, ...updatedLaps],
       };
     });
   };
 
-  const renameLap = (process: string, id: number, newName: string) => {
+  const renameLap = (process: string, instance: number, newprocess_step: string) => {
     setProcesses(prevProcesses => {
       return {
         ...prevProcesses,
-        [process]: prevProcesses[process].map(lap => (lap.id === id ? { ...lap, name: newName } : lap)),
+        [process]: prevProcesses[process].map(lap => (lap.id === id ? { ...lap, process_step: newName } : lap)),
       };
     });
   };
 
-  const addNoteToLap = (process: string, id: number, newNote: string) => {
+  const addNoteToLap = (process: string, instance: number, newNote: string) => {
     setProcesses(prevProcesses => {
       return {
         ...prevProcesses,
@@ -76,12 +76,11 @@ export default function StopwatchWithLap() {
     });
   };
 
-
-
   const loadData = async () => {
     const result = await database.getFirstAsync<{
-      id: number;
-      name: string;
+      process: instance; 
+      instance: number;
+      process_step: string;
       time: string;
       note: string;
     }>(`SELECT * FROM timestudies WHERE id = ?`, [parseInt(id as string)]);
@@ -106,7 +105,6 @@ export default function StopwatchWithLap() {
       setDataSaved(true);
       setNewData(false);
       alert('Data saved successfully!');
-      router.back(); // Assuming you want to navigate back after saving
     } catch (error) {
       console.error("Error saving laps:", error);
       alert('Failed to save data.');
@@ -125,6 +123,7 @@ export default function StopwatchWithLap() {
       console.error("Error updating item:", error);
     }
   };
+
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.timer}>{`${(time / 3600000).toFixed(0)}:${((time / 60000) % 60).toFixed(0)}'${((time / 1000) % 60).toFixed(0)}.${(time % 1000).toFixed(0)}`}</Text>
@@ -154,10 +153,10 @@ export default function StopwatchWithLap() {
           <Text style={styles.processTitle}>{process}</Text>
           <FlatList
             data={processes[process]}
-            keyExtractor={(item) => item.id.toString()}
+            keyExtractor={(item) => item.instance.toString()}
             renderItem={({ item }) => (
               <View style={styles.lapItem}>
-                <Text style={styles.lapId}>{`ID: ${item.id}`}</Text>
+                <Text style={styles.lapId}>{`Instance: ${item.id}`}</Text>
                 <TextInput
                   style={styles.lapNameInput}
                   value={item.name}
@@ -248,7 +247,7 @@ const styles = StyleSheet.create({
     marginVertical: 5,
     borderRadius: 5,
   },
-  lapId: {
+  lapprocess: {
     fontSize: 18,
     color: colors.textPrimary,
     marginRight: 10,
