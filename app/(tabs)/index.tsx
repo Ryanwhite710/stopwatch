@@ -1,6 +1,9 @@
 import colors from '../constants/colors'; // Adjust the import path if needed
 import React, { useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, FlatList, TextInput, StyleSheet, ScrollView } from 'react-native';
+import { router, Stack, useLocalSearchParams } from "expo-router";
+import { useSQLiteContext } from "expo-sqlite";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function StopwatchWithLap() {
   const [isRunning, setIsRunning] = useState(false);
@@ -9,6 +12,9 @@ export default function StopwatchWithLap() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const lapIdRef = useRef(0);
   const [currentProcess, setCurrentProcess] = useState('Default Process');
+  const [dataSaved, setDataSaved] = useState(false);
+  const [newData, setNewData] = useState(false);
+  const database = useSQLiteContext();
 
   const startStopwatch = () => {
     setIsRunning(true);
@@ -26,10 +32,20 @@ export default function StopwatchWithLap() {
   };
 
   const resetStopwatch = () => {
+    // Check if there are unsaved laps
+    if (!dataSaved && newData) {
+      // Prompt the user to save the data
+      alert('You have unsaved data. Please save before resetting.');
+      return; // Do not reset if there are unsaved changes
+    }
+
+    // Reset the stopwatch only if there are no unsaved changes
     stopStopwatch();
     setTime(0);
     setProcesses({});
     lapIdRef.current = 0;
+    setDataSaved(false);
+    setNewData(false);
   };
 
   const recordLap = () => {
@@ -60,6 +76,62 @@ export default function StopwatchWithLap() {
     });
   };
 
+
+  React.useEffect(() => {
+    if (id) {
+      // if id is present, then we are in edit mode
+      dataExist(true);
+      loadData();
+    }
+  }, [id]);
+
+  const loadData = async () => {
+    const result = await database.getFirstAsync<{
+      id: number;
+      name: string;
+      time: string;
+      note: string;
+    }>(`SELECT * FROM timestudies WHERE id = ?`, [parseInt(id as string)]);
+  };
+
+  const handleSave = async () => {
+    try {
+      const laps = processes[currentProcess];
+      if (laps.length === 0) {
+        alert('No laps to save.');
+        return;
+      }
+
+      for (const lap of laps) {
+        const { id, time, name, note } = lap;
+        await database.runAsync(
+          "INSERT INTO timestudies (id, name, time, note) VALUES (?, ?, ?, ?)",
+          [id, name, time, note]
+        );
+      }
+      console.log("All laps saved successfully.");
+      setDataSaved(true);
+      setNewData(false);
+      alert('Data saved successfully!');
+      router.back(); // Assuming you want to navigate back after saving
+    } catch (error) {
+      console.error("Error saving laps:", error);
+      alert('Failed to save data.');
+    }
+  };
+
+  const handleUpdate = async () => {
+    try {
+      const response = await database.runAsync(
+        `UPDATE timestudies SET name = ?, time = ?, note = ? WHERE id = ?`,
+        [name, time, note, parseInt(id as string)]
+      );
+      console.log("Item updated successfully:", response?.changes!);
+      router.back();
+    } catch (error) {
+      console.error("Error updating item:", error);
+    }
+  };
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.timer}>{`${(time / 3600000).toFixed(0)}:${((time / 60000) % 60).toFixed(0)}'${((time / 1000) % 60).toFixed(0)}.${(time % 1000).toFixed(0)}`}</Text>
@@ -80,6 +152,9 @@ export default function StopwatchWithLap() {
         <TouchableOpacity onPress={recordLap} style={styles.buttonLap}>
           <Text style={styles.buttonText}>Lap</Text>
         </TouchableOpacity>
+        <TouchableOpacity onPress={handleSave} style={styles.button}>
+          <Text style={styles.buttonText}>Save</Text>
+        </TouchableOpacity>
       </View>
       {Object.keys(processes).map(process => (
         <View key={process} style={styles.processSection}>
@@ -94,7 +169,7 @@ export default function StopwatchWithLap() {
                   style={styles.lapNameInput}
                   value={item.name}
                   onChangeText={(text) => renameLap(process, item.id, text)}
-                  placeholder="Enter lap name"
+                  placeholder="Enter Process Step"
                   placeholderTextColor="#ccc"
                 />
                 <Text style={styles.lapTime}>{`${(item.time / 3600000).toFixed(0)}:${((item.time / 60000) % 60).toFixed(0)}'${((item.time / 1000) % 60).toFixed(0)}.${(item.time % 1000).toFixed(0)}`}</Text>
