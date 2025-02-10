@@ -9,8 +9,8 @@ export default function StopwatchWithLap() {
   const [time, setTime] = useState(0);
   const [processes, setProcesses] = useState<Record<string, {process: string; instance: number; process_step: string; time: number; note: string }[]>>({});
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const lapIdRef = useRef(0);
-  const [currentProcess, setCurrentProcess] = useState('Default Process');
+  const lapIdRef = useRef(0); // Instance count
+  const [currentProcess, setCurrentProcess] = useState('Default Process'); // Process input
   const [currentStep, setCurrentStep] = useState(''); // Process step input
   const [currentNote, setCurrentNote] = useState(''); // Note input
   const database = useSQLiteContext();
@@ -18,7 +18,7 @@ export default function StopwatchWithLap() {
   const startStopwatch = () => {
     setIsRunning(true);
     timerRef.current = setInterval(() => {
-      setTime(prevTime => prevTime + 10); // time incremented every 10ms
+      setTime(prevTime => prevTime + 10); // Time incremented every 10ms
     }, 10);
   };
 
@@ -38,11 +38,6 @@ export default function StopwatchWithLap() {
   };
 
   const recordLap = () => {
-    if (!currentStep) {
-      alert('Please enter a process step.');
-      return;
-    }
-
     // Ensure instance increments for each process
     const updatedInstance = (processes[currentProcess]?.length ?? 0) + 1;
     
@@ -68,7 +63,7 @@ export default function StopwatchWithLap() {
     setCurrentStep('');
     setCurrentNote('');
   };
-
+  
   const handleSave = async () => {
     try {
       const laps = processes[currentProcess];
@@ -78,11 +73,11 @@ export default function StopwatchWithLap() {
       }
 
       for (const lap of laps) {
-        const { process, instance, process_step, time, note } = lap;
-        
+        const { id, process, instance, process_step, time, note } = lap;
+
         await database.runAsync(
-          "INSERT INTO timestudies (process, instance, process_step, time, note) VALUES (?, ?, ?, ?, ?)",
-          [process, instance, process_step, time, note]
+          "INSERT INTO timestudies (id, process, instance, process_step, time, note) VALUES (?, ?, ?, ?, ?, ?)",
+          [id, process, instance, process_step, time, note]
         );
       }
       alert('Data saved successfully!');
@@ -147,8 +142,37 @@ export default function StopwatchWithLap() {
             keyExtractor={(item) => item.instance.toString()}
             renderItem={({ item }) => (
               <View style={styles.lapItem}>
-                <Text>{`Instance: ${item.instance}, Step: ${item.process_step}, Time: ${item.time}`}</Text>
-                <Text>{`Note: ${item.note}`}</Text>
+                <Text>{`Instance: ${item.instance}`}</Text>
+                <Text>{`Process Step: ${item.process_step || "Enter Process Step"}`}</Text> {/* Show placeholder if empty */}
+                <Text>{`Note: ${item.note || "Enter Note"}`}</Text> {/* Show placeholder if empty */}
+                
+                {/* Allow editing of Process Step and Note */}
+                <TextInput
+                  style={styles.processNameInput}
+                  value={item.process_step}
+                  onChangeText={(text) => {
+                    const updatedProcesses = { ...processes };
+                    updatedProcesses[process] = updatedProcesses[process].map(lap =>
+                      lap.instance === item.instance ? { ...lap, process_step: text } : lap
+                    );
+                    setProcesses(updatedProcesses);
+                  }}
+                  placeholder="Edit Process Step"
+                  placeholderTextColor="#ccc"
+                />
+                <TextInput
+                  style={styles.processNameInput}
+                  value={item.note}
+                  onChangeText={(text) => {
+                    const updatedProcesses = { ...processes };
+                    updatedProcesses[process] = updatedProcesses[process].map(lap =>
+                      lap.instance === item.instance ? { ...lap, note: text } : lap
+                    );
+                    setProcesses(updatedProcesses);
+                  }}
+                  placeholder="Edit Note"
+                  placeholderTextColor="#ccc"
+                />
               </View>
             )}
           />
@@ -159,15 +183,84 @@ export default function StopwatchWithLap() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background, padding: 20 },
-  timer: { fontSize: 48, color: colors.textPrimary, marginBottom: 20, textAlign: 'center' },
-  processNameInput: { color: colors.textPrimary, fontSize: 18, borderBottomWidth: 1, borderBottomColor: colors.border, padding: 5, marginBottom: 20, textAlign: 'center' },
-  buttonContainer: { flexDirection: 'row', marginBottom: 20, justifyContent: 'center' },
-  button: { margin: 10, padding: 10, backgroundColor: colors.primary, borderRadius: 5 },
-  buttonReset: { margin: 10, padding: 10, backgroundColor: colors.danger, borderRadius: 5 },
-  buttonLap: { margin: 10, padding: 10, backgroundColor: colors.secondary, borderRadius: 5 },
-  buttonText: { color: colors.textPrimary, fontSize: 18 },
-  processSection: { marginBottom: 20 },
-  processTitle: { fontSize: 22, color: colors.textPrimary, marginBottom: 10, textAlign: 'center' },
-  lapItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.lapBackground, padding: 10, marginVertical: 5, borderRadius: 5 },
+  container: { 
+    flex: 1, 
+    backgroundColor: colors.background, 
+    padding: 20,
+  },
+  timer: { 
+    fontSize: 48, 
+    color: colors.textPrimary, 
+    marginBottom: 20, 
+    textAlign: 'center',
+  },
+  processNameInput: { 
+    color: colors.textPrimary, 
+    fontSize: 16, 
+    borderBottomWidth: 1, 
+    borderBottomColor: colors.border, 
+    padding: 5, 
+    marginBottom: 20, 
+    textAlign: 'center',
+  },
+  buttonContainer: { 
+    flexDirection: 'row', 
+    marginBottom: 20, 
+    justifyContent: 'center',
+  },
+  button: { 
+    margin: 10, 
+    padding: 10, 
+    backgroundColor: colors.primary, 
+    borderRadius: 5,
+  },
+  buttonReset: { 
+    margin: 10, 
+    padding: 10, 
+    backgroundColor: colors.danger, 
+    borderRadius: 5,
+  },
+  buttonLap: { 
+    margin: 10, 
+    padding: 10, 
+    backgroundColor: colors.secondary, 
+    borderRadius: 5,
+  },
+  buttonText: { 
+    color: colors.textPrimary, 
+    fontSize: 18,
+  },
+  processSection: { 
+    marginBottom: 20,
+    maxHeight: 500, // Set max height to prevent overflow off-screen
+    overflow: 'scroll', // Allow scrolling within the process section if content is too large
+  },
+  processTitle: { 
+    fontSize: 22, 
+    color: colors.textPrimary, 
+    marginBottom: 10, 
+    textAlign: 'center',
+  },
+  lapItem: { 
+    flexDirection: 'column',  // Arrange lap details vertically
+    alignItems: 'flex-start',  // Align text to the left
+    backgroundColor: colors.lapBackground, 
+    padding: 10, 
+    marginVertical: 5, 
+    borderRadius: 5,
+    width: '100%', // Take full width of the container
+  },
+  lapItemText: {
+    fontSize: 16, // Adjust text size to fit better
+    color: colors.textPrimary,
+    flexWrap: 'wrap', // Wrap text if it's too long
+  },
+  lapEdit: {
+    flex: 1, 
+    color: colors.textPrimary, 
+    fontSize: 18, 
+    borderBottomWidth: 1, 
+    borderBottomColor: colors.border, 
+    padding: 5,
+  },
 });

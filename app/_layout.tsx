@@ -7,7 +7,7 @@ const createDbIfNeeded = async (db: SQLiteDatabase) => {
   try {
     // Create table with correct column names
     const response = await db.execAsync(
-      "CREATE TABLE IF NOT EXISTS timestudies (process TEXT, instance INTEGER, process_step TEXT, time TEXT, note TEXT)"
+      "CREATE TABLE IF NOT EXISTS timestudies (id INTEGER PRIMARY KEY AUTOINCREMENT, process TEXT, instance INTEGER, process_step TEXT, time TEXT, note TEXT)"
     );
     console.log("Database created", response);
   } catch (error) {

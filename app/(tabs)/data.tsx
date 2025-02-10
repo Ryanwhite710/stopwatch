@@ -6,7 +6,7 @@ import { useSQLiteContext } from "expo-sqlite";
 import * as FileSystem from "expo-file-system";
 
 export default function TabHome() {
-  const [data, setData] = useState<{ process: string; instance: number; process_step: string; time: number; note: string }[]>([]);
+  const [data, setData] = useState<{id:number; process: string; instance: number; process_step: string; time: number; note: string }[]>([]);
 
   const database = useSQLiteContext();
 
@@ -22,15 +22,16 @@ export default function TabHome() {
     try {
       await FileSystem.deleteAsync(dbPath, { idempotent: true });
       Alert.alert("Database deleted successfully");
-      setData([]); // Optionally clear data after deleting
+      setData([`Delete from *`]); // Optionally clear data after deleting
     } catch (error) {
       console.error("Error deleting database:", error);
       Alert.alert("Error deleting database", error.message);
     }
   };
-
+  
   const loadData = async () => {
     const result = await database.getAllAsync<{
+      id: number;
       process: string;
       instance: number;
       process_step: string;
@@ -47,7 +48,6 @@ export default function TabHome() {
     setData(transformedData);
   };
 
-  // Confirm before deleting database
   const confirmDeleteDatabase = () => {
     Alert.alert(
       "Delete Database",
@@ -84,10 +84,11 @@ export default function TabHome() {
           <View style={{ padding: 10 }}>
             <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
               <View>
-                <Text>{item.process}</Text>
+                <Text>{`ID: ${item.id}`}</Text>
+                <Text>{`Process ${item.process}`}</Text>
                 <Text>{`Instance: ${item.instance}`}</Text>
                 <Text>{`Step: ${item.process_step}`}</Text>
-                <Text>{`Time: ${formatTime(item.time)}`}</Text> {/* Format the time */}
+                <Text>{`Time: ${(item.time)}`}</Text> 
                 <Text>{`Note: ${item.note}`}</Text>
               </View>
             </View>
