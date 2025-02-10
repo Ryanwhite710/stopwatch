@@ -1,17 +1,16 @@
 import { router, Stack, useFocusEffect } from "expo-router";
-import React, { useCallback } from "react";
+import React, { useCallback, useState } from "react";
 import { View, Text, TouchableOpacity, FlatList, StyleSheet, Alert } from "react-native";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useSQLiteContext } from "expo-sqlite";
 import * as FileSystem from "expo-file-system";
 
 export default function TabHome() {
-  const [data, setData] = React.useState<
-    { process: string; instance: number; time: number; process_step: string; note: string }[]
-  >([]);
+  const [data, setData] = useState<{ process: string; instance: number; process_step: string; time: number; note: string }[]>([]);
 
   const database = useSQLiteContext();
 
+  // Fetch data when the screen is focused
   useFocusEffect(
     useCallback(() => {
       loadData(); // Fetch data when the screen is focused
@@ -35,13 +34,20 @@ export default function TabHome() {
       process: string;
       instance: number;
       process_step: string;
-      time: string;
+      time: string;  // time is stored as string in the database (milliseconds)
       note: string;
     }>("SELECT * FROM timestudies");
-    setData(result);
+
+    // Convert time to a number and format it
+    const transformedData = result.map(item => ({
+      ...item,
+      time: parseInt(item.time, 10),  // Convert time from string to number
+    }));
+
+    setData(transformedData);
   };
 
-  // Function to confirm database deletion
+  // Confirm before deleting database
   const confirmDeleteDatabase = () => {
     Alert.alert(
       "Delete Database",
@@ -51,6 +57,14 @@ export default function TabHome() {
         { text: "Delete", onPress: deleteDatabase, style: "destructive" },
       ]
     );
+  };
+
+  // Format the time to a human-readable format
+  const formatTime = (time: number) => {
+    const minutes = Math.floor(time / 60000);
+    const seconds = Math.floor((time % 60000) / 1000);
+    const milliseconds = time % 1000;
+    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}.${milliseconds}`;
   };
 
   return (
@@ -66,15 +80,15 @@ export default function TabHome() {
       />
       <FlatList
         data={data}
-        renderItem={({ item }: { item: { process: string; instance: number; time: number; process_step: string; note: string } }) => (
+        renderItem={({ item }) => (
           <View style={{ padding: 10 }}>
             <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
               <View>
                 <Text>{item.process}</Text>
-                <Text>{item.instance}</Text>
-                <Text>{item.time}</Text>
-                <Text>{item.process_step}</Text>
-                <Text>{item.note}</Text>
+                <Text>{`Instance: ${item.instance}`}</Text>
+                <Text>{`Step: ${item.process_step}`}</Text>
+                <Text>{`Time: ${formatTime(item.time)}`}</Text> {/* Format the time */}
+                <Text>{`Note: ${item.note}`}</Text>
               </View>
             </View>
           </View>

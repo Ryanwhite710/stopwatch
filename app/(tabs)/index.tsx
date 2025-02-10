@@ -1,25 +1,24 @@
 import colors from '../constants/colors'; 
 import React, { useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, FlatList, TextInput, StyleSheet, ScrollView } from 'react-native';
-import { router, Stack } from "expo-router";
 import { useSQLiteContext } from "expo-sqlite";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function StopwatchWithLap() {
   const [isRunning, setIsRunning] = useState(false);
   const [time, setTime] = useState(0);
-  const [processes, setProcesses] = useState<Record<string, {process: string; instance: number; time: number; process_step: string; note: string }[]>>({});
+  const [processes, setProcesses] = useState<Record<string, {process: string; instance: number; process_step: string; time: number; note: string }[]>>({});
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const lapIdRef = useRef(0);
   const [currentProcess, setCurrentProcess] = useState('Default Process');
-  const [dataSaved, setDataSaved] = useState(false);
-  const [newData, setNewData] = useState(false);
+  const [currentStep, setCurrentStep] = useState(''); // Process step input
+  const [currentNote, setCurrentNote] = useState(''); // Note input
   const database = useSQLiteContext();
 
   const startStopwatch = () => {
     setIsRunning(true);
     timerRef.current = setInterval(() => {
-      setTime(prevTime => prevTime + 10);
+      setTime(prevTime => prevTime + 10); // time incremented every 10ms
     }, 10);
   };
 
@@ -32,58 +31,42 @@ export default function StopwatchWithLap() {
   };
 
   const resetStopwatch = () => {
-    // Check if there are unsaved laps
-    if (!dataSaved && newData) {
-    // prompt the user to save the data
-      alert('You have unsaved data. Please save before resetting.');
-      return; 
-    // Do not reset if there are unsaved changes
-    }
-    //resets the stopwatch if all changes have been saved
     stopStopwatch();
     setTime(0);
     setProcesses({});
     lapIdRef.current = 0;
-    setDataSaved(false);
-    setNewData(false);
   };
 
   const recordLap = () => {
+    if (!currentStep) {
+      alert('Please enter a process step.');
+      return;
+    }
+
+    // Ensure instance increments for each process
+    const updatedInstance = (processes[currentProcess]?.length ?? 0) + 1;
+    
+    // Add new lap data
     setProcesses(prevProcesses => {
       const updatedLaps = prevProcesses[currentProcess] || [];
       return {
         ...prevProcesses,
-        [currentProcess]: [{ process: [currentProcess], instance: lapIdRef.current++, time, process_step: `Lap ${updatedLaps.length + 1}`, note: '' }, ...updatedLaps],
+        [currentProcess]: [
+          ...updatedLaps,
+          {
+            process: currentProcess,
+            instance: updatedInstance,
+            process_step: currentStep,
+            time,
+            note: currentNote,
+          },
+        ],
       };
     });
-  };
 
-  const renameLap = (process: string, instance: number, newprocess_step: string) => {
-    setProcesses(prevProcesses => {
-      return {
-        ...prevProcesses,
-        [process]: prevProcesses[process].map(lap => (lap.id === id ? { ...lap, process_step: newName } : lap)),
-      };
-    });
-  };
-
-  const addNoteToLap = (process: string, instance: number, newNote: string) => {
-    setProcesses(prevProcesses => {
-      return {
-        ...prevProcesses,
-        [process]: prevProcesses[process].map(lap => (lap.id === id ? { ...lap, note: newNote } : lap)),
-      };
-    });
-  };
-
-  const loadData = async () => {
-    const result = await database.getFirstAsync<{
-      process: instance; 
-      instance: number;
-      process_step: string;
-      time: string;
-      note: string;
-    }>(`SELECT * FROM timestudies WHERE id = ?`, [parseInt(id as string)]);
+    // Clear step and note inputs after recording lap
+    setCurrentStep('');
+    setCurrentNote('');
   };
 
   const handleSave = async () => {
@@ -95,15 +78,13 @@ export default function StopwatchWithLap() {
       }
 
       for (const lap of laps) {
-        const { id, time, name, note } = lap;
+        const { process, instance, process_step, time, note } = lap;
+        
         await database.runAsync(
-          "INSERT INTO timestudies (id, name, time, note) VALUES (?, ?, ?, ?)",
-          [id, name, time, note]
+          "INSERT INTO timestudies (process, instance, process_step, time, note) VALUES (?, ?, ?, ?, ?)",
+          [process, instance, process_step, time, note]
         );
       }
-      console.log("All laps saved successfully.");
-      setDataSaved(true);
-      setNewData(false);
       alert('Data saved successfully!');
     } catch (error) {
       console.error("Error saving laps:", error);
@@ -111,22 +92,11 @@ export default function StopwatchWithLap() {
     }
   };
 
-  const handleUpdate = async () => {
-    try {
-      const response = await database.runAsync(
-        `UPDATE timestudies SET name = ?, time = ?, note = ? WHERE id = ?`,
-        [name, time, note, parseInt(id as string)]
-      );
-      console.log("Item updated successfully:", response?.changes!);
-      router.back();
-    } catch (error) {
-      console.error("Error updating item:", error);
-    }
-  };
-
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.timer}>{`${(time / 3600000).toFixed(0)}:${((time / 60000) % 60).toFixed(0)}'${((time / 1000) % 60).toFixed(0)}.${(time % 1000).toFixed(0)}`}</Text>
+      
+      {/* Process name input */}
       <TextInput
         style={styles.processNameInput}
         value={currentProcess}
@@ -134,6 +104,25 @@ export default function StopwatchWithLap() {
         placeholder="Enter Process Name"
         placeholderTextColor="#ccc"
       />
+      
+      {/* Process step input */}
+      <TextInput
+        style={styles.processNameInput}
+        value={currentStep}
+        onChangeText={setCurrentStep}
+        placeholder="Enter Process Step"
+        placeholderTextColor="#ccc"
+      />
+
+      {/* Notes input */}
+      <TextInput
+        style={styles.processNameInput}
+        value={currentNote}
+        onChangeText={setCurrentNote}
+        placeholder="Enter Note"
+        placeholderTextColor="#ccc"
+      />
+
       <View style={styles.buttonContainer}>
         <TouchableOpacity onPress={isRunning ? stopStopwatch : startStopwatch} style={styles.button}>
           <Text style={styles.buttonText}>{isRunning ? 'Stop' : 'Start'}</Text>
@@ -148,6 +137,8 @@ export default function StopwatchWithLap() {
           <Text style={styles.buttonText}>Save</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Render recorded laps */}
       {Object.keys(processes).map(process => (
         <View key={process} style={styles.processSection}>
           <Text style={styles.processTitle}>{process}</Text>
@@ -156,22 +147,8 @@ export default function StopwatchWithLap() {
             keyExtractor={(item) => item.instance.toString()}
             renderItem={({ item }) => (
               <View style={styles.lapItem}>
-                <Text style={styles.lapId}>{`Instance: ${item.id}`}</Text>
-                <TextInput
-                  style={styles.lapNameInput}
-                  value={item.name}
-                  onChangeText={(text) => renameLap(process, item.id, text)}
-                  placeholder="Enter Process Step"
-                  placeholderTextColor="#ccc"
-                />
-                <Text style={styles.lapTime}>{`${(item.time / 3600000).toFixed(0)}:${((item.time / 60000) % 60).toFixed(0)}'${((item.time / 1000) % 60).toFixed(0)}.${(item.time % 1000).toFixed(0)}`}</Text>
-                <TextInput
-                  style={styles.lapNoteInput}
-                  value={item.note}
-                  onChangeText={(text) => addNoteToLap(process, item.id, text)}
-                  placeholder="Enter note"
-                  placeholderTextColor="#ccc"
-                />
+                <Text>{`Instance: ${item.instance}, Step: ${item.process_step}, Time: ${item.time}`}</Text>
+                <Text>{`Note: ${item.note}`}</Text>
               </View>
             )}
           />
@@ -181,96 +158,16 @@ export default function StopwatchWithLap() {
   );
 }
 
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    padding: 20,
-  },
-  timer: {
-    fontSize: 48,
-    color: colors.textPrimary,
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  processNameInput: {
-    color: colors.textPrimary,
-    fontSize: 18,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    padding: 5,
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    marginBottom: 20,
-    justifyContent: 'center',
-  },
-  button: {
-    margin: 10,
-    padding: 10,
-    backgroundColor: colors.primary,
-    borderRadius: 5,
-  },
-  buttonReset: {
-    margin: 10,
-    padding: 10,
-    backgroundColor: colors.danger,
-    borderRadius: 5,
-  },
-  buttonLap: {
-    margin: 10,
-    padding: 10,
-    backgroundColor: colors.secondary,
-    borderRadius: 5,
-  },
-  buttonText: {
-    color: colors.textPrimary,
-    fontSize: 18,
-  },
-  processSection: {
-    marginBottom: 20,
-  },
-  processTitle: {
-    fontSize: 22,
-    color: colors.textPrimary,
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  lapItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.lapBackground,
-    padding: 10,
-    marginVertical: 5,
-    borderRadius: 5,
-  },
-  lapprocess: {
-    fontSize: 18,
-    color: colors.textPrimary,
-    marginRight: 10,
-  },
-  lapNameInput: {
-    flex: 1,
-    color: colors.textPrimary,
-    fontSize: 18,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    padding: 5,
-  },
-  lapTime: {
-    fontSize: 18,
-    color: colors.textPrimary,
-    marginHorizontal: 10,
-  },
-  lapNoteInput: {
-    flex: 1,
-    color: colors.textPrimary,
-    fontSize: 18,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    padding: 5,
-  },
+  container: { flex: 1, backgroundColor: colors.background, padding: 20 },
+  timer: { fontSize: 48, color: colors.textPrimary, marginBottom: 20, textAlign: 'center' },
+  processNameInput: { color: colors.textPrimary, fontSize: 18, borderBottomWidth: 1, borderBottomColor: colors.border, padding: 5, marginBottom: 20, textAlign: 'center' },
+  buttonContainer: { flexDirection: 'row', marginBottom: 20, justifyContent: 'center' },
+  button: { margin: 10, padding: 10, backgroundColor: colors.primary, borderRadius: 5 },
+  buttonReset: { margin: 10, padding: 10, backgroundColor: colors.danger, borderRadius: 5 },
+  buttonLap: { margin: 10, padding: 10, backgroundColor: colors.secondary, borderRadius: 5 },
+  buttonText: { color: colors.textPrimary, fontSize: 18 },
+  processSection: { marginBottom: 20 },
+  processTitle: { fontSize: 22, color: colors.textPrimary, marginBottom: 10, textAlign: 'center' },
+  lapItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.lapBackground, padding: 10, marginVertical: 5, borderRadius: 5 },
 });

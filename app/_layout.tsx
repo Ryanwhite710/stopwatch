@@ -3,12 +3,11 @@ import { SQLiteDatabase, SQLiteProvider } from "expo-sqlite";
 import { StatusBar } from "expo-status-bar";
 
 const createDbIfNeeded = async (db: SQLiteDatabase) => {
-  //
   console.log("Creating database");
   try {
-    // Create a table
+    // Create table with correct column names
     const response = await db.execAsync(
-      "CREATE TABLE IF NOT EXISTS timestudies (process TEXT, instance INTEGER, proces_step TEXT, time TEXT, note TEXT)"
+      "CREATE TABLE IF NOT EXISTS timestudies (process TEXT, instance INTEGER, process_step TEXT, time TEXT, note TEXT)"
     );
     console.log("Database created", response);
   } catch (error) {
