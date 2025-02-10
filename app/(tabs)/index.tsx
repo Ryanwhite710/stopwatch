@@ -5,20 +5,48 @@ import { useSQLiteContext } from "expo-sqlite";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function StopwatchWithLap() {
+  // Stopwatch state
   const [isRunning, setIsRunning] = useState(false);
   const [time, setTime] = useState(0);
-  const [processes, setProcesses] = useState<Record<string, {process: string; instance: number; process_step: string; time: number; note: string }[]>>({});
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const lapIdRef = useRef(0); // Instance count
-  const [currentProcess, setCurrentProcess] = useState('Default Process'); // Process input
-  const [currentStep, setCurrentStep] = useState(''); // Process step input
-  const [currentNote, setCurrentNote] = useState(''); // Note input
+  
+  // Input state for current lap
+  const [currentProcess, setCurrentProcess] = useState('Default Process');
+  const [currentStep, setCurrentStep] = useState('');
+  const [currentNote, setCurrentNote] = useState('');
+  
+  // SQLite database context
   const database = useSQLiteContext();
-
+  
+  // Lap state is stored as a record keyed by process name.
+  // Each lap has a "saved" flag (false when new, true after saving).
+  const [processes, setProcesses] = useState<Record<string, {
+    process: string;
+    instance: number;
+    process_step: string;
+    time: number;
+    note: string;
+    saved?: boolean;
+  }[]>>({});
+  
+  // Determine if all laps for the current process have been saved.
+  const allLapsSaved = processes[currentProcess]?.every(lap => lap.saved) || false;
+  
+  // Helper: Format time in a chronograph style: HH:MM:SS.mmm
+  const formatTime = (time: number): string => {
+    const hours = Math.floor(time / 3600000);
+    const minutes = Math.floor((time % 3600000) / 60000);
+    const seconds = Math.floor((time % 60000) / 1000);
+    const milliseconds = time % 1000;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds
+      .toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
+  };
+  
+  // Stopwatch control functions
   const startStopwatch = () => {
     setIsRunning(true);
     timerRef.current = setInterval(() => {
-      setTime(prevTime => prevTime + 10); // Time incremented every 10ms
+      setTime(prevTime => prevTime + 10);
     }, 10);
   };
 
@@ -34,14 +62,15 @@ export default function StopwatchWithLap() {
     stopStopwatch();
     setTime(0);
     setProcesses({});
-    lapIdRef.current = 0;
+    // Reset the instance counter if needed.
   };
 
+  // Record a new lap for the current process.
   const recordLap = () => {
-    // Ensure instance increments for each process
+    // Increment the instance number for the current process.
     const updatedInstance = (processes[currentProcess]?.length ?? 0) + 1;
     
-    // Add new lap data
+    // Add the new lap with "saved: false".
     setProcesses(prevProcesses => {
       const updatedLaps = prevProcesses[currentProcess] || [];
       return {
@@ -54,32 +83,46 @@ export default function StopwatchWithLap() {
             process_step: currentStep,
             time,
             note: currentNote,
+            saved: false,
           },
         ],
       };
     });
 
-    // Clear step and note inputs after recording lap
+    // Clear the process step and note inputs.
     setCurrentStep('');
     setCurrentNote('');
   };
-  
+
+  // Save unsaved laps to the database.
   const handleSave = async () => {
     try {
       const laps = processes[currentProcess];
-      if (laps.length === 0) {
+      if (!laps || laps.length === 0) {
         alert('No laps to save.');
         return;
       }
 
+      // Update unsaved laps.
+      const updatedLaps = [];
       for (const lap of laps) {
-        const { id, process, instance, process_step, time, note } = lap;
-
-        await database.runAsync(
-          "INSERT INTO timestudies (id, process, instance, process_step, time, note) VALUES (?, ?, ?, ?, ?, ?)",
-          [id, process, instance, process_step, time, note]
-        );
+        if (!lap.saved) {
+          await database.runAsync(
+            "INSERT INTO timestudies (process, instance, process_step, time, note) VALUES (?, ?, ?, ?, ?)",
+            [lap.process, lap.instance, lap.process_step, lap.time, lap.note]
+          );
+          updatedLaps.push({ ...lap, saved: true });
+        } else {
+          updatedLaps.push(lap);
+        }
       }
+
+      // Update state so that saved laps are marked as such.
+      setProcesses(prevProcesses => ({
+        ...prevProcesses,
+        [currentProcess]: updatedLaps,
+      }));
+
       alert('Data saved successfully!');
     } catch (error) {
       console.error("Error saving laps:", error);
@@ -89,7 +132,9 @@ export default function StopwatchWithLap() {
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.timer}>{`${(time / 3600000).toFixed(0)}:${((time / 60000) % 60).toFixed(0)}'${((time / 1000) % 60).toFixed(0)}.${(time % 1000).toFixed(0)}`}</Text>
+      <Text style={styles.timer}>
+        {formatTime(time)}
+      </Text>
       
       {/* Process name input */}
       <TextInput
@@ -109,7 +154,7 @@ export default function StopwatchWithLap() {
         placeholderTextColor="#ccc"
       />
 
-      {/* Notes input */}
+      {/* Note input */}
       <TextInput
         style={styles.processNameInput}
         value={currentNote}
@@ -128,8 +173,12 @@ export default function StopwatchWithLap() {
         <TouchableOpacity onPress={recordLap} style={styles.buttonLap}>
           <Text style={styles.buttonText}>Lap</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={handleSave} style={styles.button}>
-          <Text style={styles.buttonText}>Save</Text>
+        <TouchableOpacity 
+          onPress={handleSave} 
+          style={styles.button}
+          disabled={allLapsSaved}  // Disable if all laps are saved.
+        >
+          <Text style={styles.buttonText}>{allLapsSaved ? 'Saved' : 'Save'}</Text>
         </TouchableOpacity>
       </View>
 
@@ -142,37 +191,44 @@ export default function StopwatchWithLap() {
             keyExtractor={(item) => item.instance.toString()}
             renderItem={({ item }) => (
               <View style={styles.lapItem}>
-                <Text>{`Instance: ${item.instance}`}</Text>
-                <Text>{`Process Step: ${item.process_step || "Enter Process Step"}`}</Text> {/* Show placeholder if empty */}
-                <Text>{`Note: ${item.note || "Enter Note"}`}</Text> {/* Show placeholder if empty */}
+                <Text style={styles.lapItemText}>{`Instance: ${item.instance}`}</Text>
                 
-                {/* Allow editing of Process Step and Note */}
-                <TextInput
-                  style={styles.processNameInput}
-                  value={item.process_step}
-                  onChangeText={(text) => {
-                    const updatedProcesses = { ...processes };
-                    updatedProcesses[process] = updatedProcesses[process].map(lap =>
-                      lap.instance === item.instance ? { ...lap, process_step: text } : lap
-                    );
-                    setProcesses(updatedProcesses);
-                  }}
-                  placeholder="Edit Process Step"
-                  placeholderTextColor="#ccc"
-                />
-                <TextInput
-                  style={styles.processNameInput}
-                  value={item.note}
-                  onChangeText={(text) => {
-                    const updatedProcesses = { ...processes };
-                    updatedProcesses[process] = updatedProcesses[process].map(lap =>
-                      lap.instance === item.instance ? { ...lap, note: text } : lap
-                    );
-                    setProcesses(updatedProcesses);
-                  }}
-                  placeholder="Edit Note"
-                  placeholderTextColor="#ccc"
-                />
+                {/* Inline editing for Process Step */}
+                <View style={styles.inlineContainer}>
+                  <Text style={styles.lapItemText}>Process Step: </Text>
+                  <TextInput
+                    style={styles.inlineInput}
+                    value={item.process_step}
+                    onChangeText={(text) => {
+                      const updatedProcesses = { ...processes };
+                      updatedProcesses[process] = updatedProcesses[process].map(lap =>
+                        lap.instance === item.instance ? { ...lap, process_step: text } : lap
+                      );
+                      setProcesses(updatedProcesses);
+                    }}
+                    placeholder="Enter Process Step"
+                    placeholderTextColor="#ccc"
+                  />
+                </View>
+                <Text style={styles.lapItemText}>{`Time: ${item.time}`}</Text>
+                
+                {/* Inline editing for Note */}
+                <View style={styles.inlineContainer}>
+                  <Text style={styles.lapItemText}>Note: </Text>
+                  <TextInput
+                    style={styles.inlineInput}
+                    value={item.note}
+                    onChangeText={(text) => {
+                      const updatedProcesses = { ...processes };
+                      updatedProcesses[process] = updatedProcesses[process].map(lap =>
+                        lap.instance === item.instance ? { ...lap, note: text } : lap
+                      );
+                      setProcesses(updatedProcesses);
+                    }}
+                    placeholder="Enter Note"
+                    placeholderTextColor="#ccc"
+                  />
+                </View>
               </View>
             )}
           />
@@ -232,8 +288,8 @@ const styles = StyleSheet.create({
   },
   processSection: { 
     marginBottom: 20,
-    maxHeight: 500, // Set max height to prevent overflow off-screen
-    overflow: 'scroll', // Allow scrolling within the process section if content is too large
+    maxHeight: 500, // Limit the section height; scroll if needed.
+    overflow: 'scroll',
   },
   processTitle: { 
     fontSize: 22, 
@@ -242,25 +298,29 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   lapItem: { 
-    flexDirection: 'column',  // Arrange lap details vertically
-    alignItems: 'flex-start',  // Align text to the left
+    flexDirection: 'column', // Stack details vertically.
+    alignItems: 'flex-start', // Align text to the left.
     backgroundColor: colors.lapBackground, 
     padding: 10, 
     marginVertical: 5, 
     borderRadius: 5,
-    width: '100%', // Take full width of the container
+    width: '100%', // Full width.
   },
   lapItemText: {
-    fontSize: 16, // Adjust text size to fit better
+    fontSize: 16, 
     color: colors.textPrimary,
-    flexWrap: 'wrap', // Wrap text if it's too long
+    flexWrap: 'wrap',
   },
-  lapEdit: {
-    flex: 1, 
-    color: colors.textPrimary, 
-    fontSize: 18, 
-    borderBottomWidth: 1, 
-    borderBottomColor: colors.border, 
-    padding: 5,
+  inlineContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  inlineInput: {
+    fontSize: 16,
+    color: colors.textPrimary,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    flex: 1,
+    marginLeft: 5,
   },
 });
