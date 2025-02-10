@@ -77,13 +77,6 @@ export default function StopwatchWithLap() {
   };
 
 
-  React.useEffect(() => {
-    if (id) {
-      // if id is present, then we are in edit mode
-      dataExist(true);
-      loadData();
-    }
-  }, [id]);
 
   const loadData = async () => {
     const result = await database.getFirstAsync<{

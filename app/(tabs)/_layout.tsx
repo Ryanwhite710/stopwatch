@@ -31,11 +31,10 @@ export default function TabLayout() {
         }} />
       <Tabs.Screen name="data" options={{
           title: 'Data',
-      <SQLiteProvider database="time_studies.db" useSuspense>
           tabBarIcon: ({color, focused}) => (
           <AntDesign name={focused ? 'table' : 'database'} color={color} size={24} />
           )
         }} />
-    </Tabs
+    </Tabs>
   );
 }
