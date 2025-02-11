@@ -1,0 +1,90 @@
+import { StyleSheet } from 'react-native';
+import colors from '../constants/colors';
+
+
+ export const styles = StyleSheet.create({
+  container: { 
+    flex: 1, 
+    backgroundColor: colors.background, 
+    padding: 20,
+  },
+  timer: { 
+    fontSize: 48, 
+    color: colors.textPrimary, 
+    marginBottom: 20, 
+    textAlign: 'center',
+  },
+  processNameInput: { 
+    color: colors.textPrimary, 
+    fontSize: 16, 
+    borderBottomWidth: 1, 
+    borderBottomColor: colors.border, 
+    padding: 5, 
+    marginBottom: 20, 
+    textAlign: 'center',
+  },
+  buttonContainer: { 
+    flexDirection: 'row', 
+    marginBottom: 20, 
+    justifyContent: 'center',
+  },
+  button: { 
+    margin: 10, 
+    padding: 10, 
+    backgroundColor: colors.primary, 
+    borderRadius: 5,
+  },
+  buttonReset: { 
+    margin: 10, 
+    padding: 10, 
+    backgroundColor: colors.danger, 
+    borderRadius: 5,
+  },
+  buttonLap: { 
+    margin: 10, 
+    padding: 10, 
+    backgroundColor: colors.secondary, 
+    borderRadius: 5,
+  },
+  buttonText: { 
+    color: colors.textPrimary, 
+    fontSize: 18,
+  },
+  processSection: { 
+    marginBottom: 20,
+    maxHeight: 500,
+    overflow: 'scroll',
+  },
+  processTitle: { 
+    fontSize: 22, 
+    color: colors.textPrimary, 
+    marginBottom: 10, 
+    textAlign: 'center',
+  },
+  lapItem: { 
+    flexDirection: 'column', // Stack details vertically.
+    alignItems: 'flex-start', // Align text to the left.
+    backgroundColor: colors.lapBackground, 
+    padding: 10,
+    marginVertical: 5, 
+    borderRadius: 5,
+    width: '100%', // Full width.
+  },
+  lapItemText: {
+    fontSize: 16,
+    color: colors.textPrimary,
+    flexWrap: 'wrap',
+  },
+  inlineContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  inlineInput: {
+    fontSize: 16,
+    color: colors.textPrimary,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    flex: 1,
+    marginLeft: 5,
+  },
+});
