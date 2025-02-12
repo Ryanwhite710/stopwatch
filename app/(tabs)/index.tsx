@@ -1,18 +1,18 @@
 import { useSQLiteContext } from "expo-sqlite";
 import React, { useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, FlatList, TextInput, ScrollView } from 'react-native';
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaProvider,SafeAreaView } from "react-native-safe-area-context";
 import colors from '../constants/colors'; 
-import style from '../constants/StyleSheet';
+import styles from '../constants/StyleSheet';
 
 export default function StopwatchWithLap() {
   // Stopwatch state
   const [isRunning, setIsRunning] = useState(false);
   const [time, setTime] = useState(0);
+  const startTimeRef = useRef<number | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  
   // Input state for current lap
-  const [currentProcess, setCurrentProcess] = useState('Default Process');
+  const [currentProcess, setCurrentProcess] = useState('');
   const [currentStep, setCurrentStep] = useState('');
   const [currentNote, setCurrentNote] = useState('');
   
@@ -46,8 +46,9 @@ export default function StopwatchWithLap() {
   // Stopwatch control functions
   const startStopwatch = () => {
     setIsRunning(true);
+    startTimeRef.current = Date.now() - time; // resume if needed
     timerRef.current = setInterval(() => {
-      setTime(prevTime => prevTime + 10);
+      setTime(Date.now() - (startTimeRef.current || 0));
     }, 10);
   };
 
@@ -96,145 +97,149 @@ export default function StopwatchWithLap() {
   };
 
   // Save unsaved laps to the database.
-  const handleSave = async () => {
-    try {
-      const laps = processes[currentProcess];
-      if (!laps || laps.length === 0) {
-        alert('No laps to save.'); StyleSheet,
-        return;
-      }
-
-      // Update unsaved laps.
-      const updatedLaps = [];
-      for (const lap of laps) {
-        if (!lap.saved) {
-          await database.runAsync(
-            "INSERT INTO timestudies (process, instance, process_step, time, note) VALUES (?, ?, ?, ?, ?)",
-            [lap.process, lap.instance, lap.process_step, lap.time, lap.note]
-          );
-          updatedLaps.push({ ...lap, saved: true });
-        } else {
-          updatedLaps.push(lap);
-        }
-      }
-
-      // Update state so that saved laps are marked as such.
-      setProcesses(prevProcesses => ({
-        ...prevProcesses, StyleSheet,
-        [currentProcess]: updatedLaps,
-      }));
-
-      alert('Data saved successfully!');
-    } catch (error) {
-      console.error("Error saving laps:", error);
-      alert('Failed to save data.');
+const handleSave = async () => {
+  try {
+    const laps = processes[currentProcess];
+    if (!laps || laps.length === 0) {
+      alert('No laps to save.');
+      return;
     }
-  };
+
+    // Update unsaved laps.
+    const updatedLaps = [];
+    for (const lap of laps) {
+      if (!lap.saved) {
+        await database.runAsync(
+          "INSERT INTO timestudies (process, instance, process_step, time, note) VALUES (?, ?, ?, ?, ?)",
+          [lap.process, lap.instance, lap.process_step, lap.time, lap.note]
+        );
+        updatedLaps.push({ ...lap, saved: true });
+      } else {
+        updatedLaps.push(lap);
+      }
+    }
+
+    // Update state so that saved laps are marked as such.
+    setProcesses(prevProcesses => ({
+      ...prevProcesses,
+      [currentProcess]: updatedLaps,
+    }));
+
+    alert('Data saved successfully!');
+  } catch (error) {
+    console.error("Error saving laps:", error);
+    alert('Failed to save data.');
+  }
+};
+
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.timer}>
-        {formatTime(time)}
-      </Text>
-      
-      {/* Process name input */}
-      <TextInput
-        style={styles.processNameInput}
-        value={currentProcess}
-        onChangeText={setCurrentProcess}
-        placeholder="Enter Process Name"
-        placeholderTextColor="#ccc"
-      />
-      
-      {/* Process step input */}
-      <TextInput
-        style={styles.processNameInput}
-        value={currentStep}
-        onChangeText={setCurrentStep}
-        placeholder="Enter Process Step"
-        placeholderTextColor="#ccc"
-      />
+    <SafeAreaProvider>
+      <SafeAreaView style={styles.container}>
+        <Text style={styles.reference}>hh:mm:ss.mms</Text>
+        <Text style={styles.timer}>
+          {formatTime(time)}
+        </Text>
+        
+        {/* Process name input */}
+        <TextInput
+          style={styles.processNameInput}
+          value={currentProcess}
+          onChangeText={setCurrentProcess}
+          placeholder="Enter Process Name"
+          placeholderTextColor="#ccc"
+        />
+        
+        {/* Process step input */}
+        <TextInput
+          style={styles.processNameInput}
+          value={currentStep}
+          onChangeText={setCurrentStep}
+          placeholder="Enter Process Step"
+          placeholderTextColor="#ccc"
+        />
 
-      {/* Note input */}
-      <TextInput
-        style={styles.processNameInput}
-        value={currentNote}
-        onChangeText={setCurrentNote}
-        placeholder="Enter Note"
-        placeholderTextColor="#ccc"
-      />
+        {/* Note input */}
+        <TextInput
+          style={styles.processNameInput}
+          value={currentNote}
+          onChangeText={setCurrentNote}
+          placeholder="Enter Note"
+          placeholderTextColor="#ccc"
+        />
 
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity onPress={isRunning ? stopStopwatch : startStopwatch} style={styles.button}>
-          <Text style={styles.buttonText}>{isRunning ? 'Stop' : 'Start'}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={resetStopwatch} style={styles.buttonReset}>
-          <Text style={styles.buttonText}>Reset</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={recordLap} style={styles.buttonLap}>
-          <Text style={styles.buttonText}>Lap</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          onPress={handleSave} 
-          style={styles.button}
-          disabled={allLapsSaved}  // Disable if all laps are saved.
-        >
-          <Text style={styles.buttonText}>{allLapsSaved ? 'Saved' : 'Save'}</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Render recorded laps */}
-      {Object.keys(processes).map(process => (
-        <View key={process} style={styles.processSection}>
-          <Text style={styles.processTitle}>{process}</Text>
-          <FlatList
-            data={processes[process]}
-            keyExtractor={(item) => item.instance.toString()}
-            renderItem={({ item }) => (
-              <View style={styles.lapItem}>
-                <Text style={styles.lapItemText}>{`Instance: ${item.instance}`}</Text>
-                
-                {/* Inline editing for Process Step */}
-                <View style={styles.inlineContainer}>
-                  <Text style={styles.lapItemText}>Process Step: </Text>
-                  <TextInput
-                    style={styles.inlineInput}
-                    value={item.process_step}
-                    onChangeText={(text) => {
-                      const updatedProcesses = { ...processes };
-                      updatedProcesses[process] = updatedProcesses[process].map(lap =>
-                        lap.instance === item.instance ? { ...lap, process_step: text } : lap
-                      );
-                      setProcesses(updatedProcesses);
-                    }}
-                    placeholder="Enter Process Step"
-                    placeholderTextColor="#ccc"
-                  />
-                </View>
-                <Text style={styles.lapItemText}>{`Time: ${item.time}`}</Text>
-                
-                {/* Inline editing for Note */}
-                <View style={styles.inlineContainer}>
-                  <Text style={styles.lapItemText}>Note: </Text>
-                  <TextInput
-                    style={styles.inlineInput}
-                    value={item.note}
-                    onChangeText={(text) => {
-                      const updatedProcesses = { ...processes };
-                      updatedProcesses[process] = updatedProcesses[process].map(lap =>
-                        lap.instance === item.instance ? { ...lap, note: text } : lap
-                      );
-                      setProcesses(updatedProcesses);
-                    }}
-                    placeholder="Enter Note"
-                    placeholderTextColor="#ccc"
-                  />
-                </View>
-              </View>
-            )}
-          />
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity onPress={isRunning ? stopStopwatch : startStopwatch} style={styles.button}>
+            <Text style={styles.buttonText}>{isRunning ? 'Stop' : 'Start'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={resetStopwatch} style={styles.buttonReset}>
+            <Text style={styles.buttonText}>Reset</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={recordLap} style={styles.buttonLap}>
+            <Text style={styles.buttonText}>Lap</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            onPress={handleSave} 
+            style={styles.button}
+            disabled={allLapsSaved}  // Disable if all laps are saved.
+          >
+            <Text style={styles.buttonText}>{allLapsSaved ? 'Saved' : 'Save'}</Text>
+          </TouchableOpacity>
         </View>
-      ))}
-    </ScrollView>
+
+        {/* Render recorded laps */}
+        {Object.keys(processes).map(process => (
+          <View key={process} style={styles.processSection}>
+            <Text style={styles.processTitle}>{process}</Text>
+            <FlatList
+              data={[...processes[process]].sort((a, b) => b.instance - a.instance)}
+              keyExtractor={(item) => item.instance.toString()}
+              renderItem={({ item }) => (
+                <View style={styles.lapItem}>
+                  <Text style={styles.lapItemText}>{`Instance: ${item.instance}`}</Text>
+                  
+                  {/* Inline editing for Process Step */}
+                  <View style={styles.inlineContainer}>
+                    <Text style={styles.lapItemText}>Process Step: </Text>
+                    <TextInput
+                      style={styles.inlineInput}
+                      value={item.process_step}
+                      onChangeText={(text) => {
+                        const updatedProcesses = { ...processes };
+                        updatedProcesses[process] = updatedProcesses[process].map(lap =>
+                          lap.instance === item.instance ? { ...lap, process_step: text } : lap
+                        );
+                        setProcesses(updatedProcesses);
+                      }}
+                      placeholder="Enter Process Step"
+                      placeholderTextColor="#ccc"
+                    />
+                  </View>
+                  <Text style={styles.lapItemText}>{`Time: ${item.time}`}</Text>
+                  
+                  {/* Inline editing for Note */}
+                  <View style={styles.inlineContainer}>
+                    <Text style={styles.lapItemText}>Note: </Text>
+                    <TextInput
+                      style={styles.inlineInput}
+                      value={item.note}
+                      onChangeText={(text) => {
+                        const updatedProcesses = { ...processes };
+                        updatedProcesses[process] = updatedProcesses[process].map(lap =>
+                          lap.instance === item.instance ? { ...lap, note: text } : lap
+                        );
+                        setProcesses(updatedProcesses);
+                      }}
+                      placeholder="Enter Note"
+                      placeholderTextColor="#ccc"
+                    />
+                  </View>
+                </View>
+              )}
+            />
+          </View>
+        ))}
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 }

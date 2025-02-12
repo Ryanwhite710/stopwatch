@@ -2,21 +2,27 @@ import { StyleSheet } from 'react-native';
 import colors from '../constants/colors';
 
 
- export const styles = StyleSheet.create({
+const styles = StyleSheet.create({
   container: { 
     flex: 1, 
     backgroundColor: colors.background, 
-    padding: 20,
+    padding: 10,
   },
-  timer: { 
-    fontSize: 48, 
+  reference: { 
     color: colors.textPrimary, 
-    marginBottom: 20, 
+    textAlign: 'center',
+    fontSize: 12,
+    fontStyle: 'italic',
+  },
+  timer: {
+    fontSize: 48,
+    color: colors.textPrimary,
+    marginBottom: 20,
     textAlign: 'center',
   },
   processNameInput: { 
     color: colors.textPrimary, 
-    fontSize: 16, 
+    fontSize: 14, 
     borderBottomWidth: 1, 
     borderBottomColor: colors.border, 
     padding: 5, 
@@ -56,7 +62,7 @@ import colors from '../constants/colors';
     overflow: 'scroll',
   },
   processTitle: { 
-    fontSize: 22, 
+    fontSize: 18, 
     color: colors.textPrimary, 
     marginBottom: 10, 
     textAlign: 'center',
@@ -71,7 +77,7 @@ import colors from '../constants/colors';
     width: '100%', // Full width.
   },
   lapItemText: {
-    fontSize: 16,
+    fontSize: 14,
     color: colors.textPrimary,
     flexWrap: 'wrap',
   },
@@ -80,7 +86,7 @@ import colors from '../constants/colors';
     alignItems: 'center',
   },
   inlineInput: {
-    fontSize: 16,
+    fontSize: 14,
     color: colors.textPrimary,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
@@ -88,3 +94,5 @@ import colors from '../constants/colors';
     marginLeft: 5,
   },
 });
+
+export default styles;
