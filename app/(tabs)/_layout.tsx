@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import AntDesign from '@expo/vector-icons/AntDesign';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import * as React from "react";
 import { SQLiteProvider } from "expo-sqlite/next";
 import { ActivityIndicator, Platform, Text, View } from "react-native";
@@ -33,6 +34,12 @@ export default function TabLayout() {
           title: 'Data',
           tabBarIcon: ({color, focused}) => (
           <AntDesign name={focused ? 'table' : 'database'} color={color} size={24} />
+          )
+        }} />
+      <Tabs.Screen name="template" options={{
+          title: 'Templates',
+          tabBarIcon: ({color, focused}) => (
+          <MaterialCommunityIcons name={focused ? 'form-textbox' : 'form-select'} color={color} size={24} />
           )
         }} />
     </Tabs>
