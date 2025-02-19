@@ -1,11 +1,12 @@
 import { router, Stack, useFocusEffect } from "expo-router";
 import React, { useCallback, useState } from "react";
-import { View, Text, TouchableOpacity, FlatList, StyleSheet, Alert } from "react-native";
+import { View, Text, TouchableOpacity, FlatList, Alert } from "react-native";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useSQLiteContext } from "expo-sqlite";
 import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
+import styles from '../constants/colors'
 
 export default function TabHome() {
   const [data, setData] = useState<{ 
@@ -17,7 +18,6 @@ export default function TabHome() {
   }[]>([]);
 
   const database = useSQLiteContext();
-
   // Fetch data when the screen is focused.
   useFocusEffect(
     useCallback(() => {
@@ -99,7 +99,7 @@ export default function TabHome() {
       <Stack.Screen
         options={{
           headerLeft: () => (
-            <TouchableOpacity onPress={confirmDeleteDatabase} style={styles.button}>
+            <TouchableOpacity onPress={confirmDeleteDatabase} style={styles.deleteButton}>
               <FontAwesome name="trash" size={20} color="white" />
             </TouchableOpacity>
           ),
@@ -127,46 +127,4 @@ export default function TabHome() {
   );
 }
 
-const styles = StyleSheet.create({
-  // BUTTON STYLE: For the trash icon button in the header.
-  button: {
-    height: 30,
-    width: 30,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 5,
-    backgroundColor: "red",
-    marginRight: 15,
-  },
-  // BUTTON TEXT STYLE: Used for any button text.
-  buttonText: {
-    fontSize: 12,
-    fontWeight: "bold",
-    color: "white",
-  },
-  // EXPORT BUTTON STYLE: A larger button for exporting JSON.
-  exportButton: {
-    height: 30,
-    width: 30,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 5,
-    backgroundColor: "blue",
-    marginRight: 15,
-  },
-});
 
-const localStyles = StyleSheet.create({
-  lapBox: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    padding: 10,
-    margin: 5,
-    borderRadius: 5,
-    backgroundColor: "#f9f9f9",
-  },
-  lapText: {
-    fontSize: 14,
-    color: "#333",
-  },
-});

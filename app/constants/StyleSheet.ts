@@ -34,6 +34,24 @@ const styles = StyleSheet.create({
     marginBottom: 20, 
     justifyContent: 'center',
   },
+  deleteButton: {
+    height: 30,
+    width: 30,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 5,
+    backgroundColor: "red",
+    marginRight: 15,
+  },
+  exportButton: {
+    height: 30,
+    width: 30,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 5,
+    backgroundColor: "blue",
+    marginRight: 15,
+  },
   button: { 
     margin: 10, 
     padding: 10, 
@@ -56,6 +74,18 @@ const styles = StyleSheet.create({
     color: colors.textPrimary, 
     fontSize: 18,
   },
+  lapBox: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    padding: 10,
+    margin: 5,
+    borderRadius: 5,
+    backgroundColor: "#f9f9f9",
+  },
+  lapText: {
+    fontSize: 14,
+    color: "#333",
+  },
   processSection: { 
     marginBottom: 20,
     maxHeight: 500,
@@ -66,6 +96,14 @@ const styles = StyleSheet.create({
     color: colors.textPrimary, 
     marginBottom: 10, 
     textAlign: 'center',
+  },
+  processStep: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    padding: 10,
+    margin: 5,
+    borderRadius: 5,
+    backgroundColor: "#f9f9f9",
   },
   lapItem: { 
     flexDirection: 'column', // Stack details vertically.
