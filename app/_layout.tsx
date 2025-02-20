@@ -6,10 +6,13 @@ const createDbIfNeeded = async (db: SQLiteDatabase) => {
   console.log("Creating database");
   try {
     // Create table with correct column names
-    const response = await db.execAsync(
+    const response1 = await db.execAsync(
       "CREATE TABLE IF NOT EXISTS timestudies (id INTEGER PRIMARY KEY AUTOINCREMENT, process TEXT, instance INTEGER, process_step TEXT, time TEXT, note TEXT)"
     );
-    console.log("Database created", response);
+    const response2 = await db.execAsync(
+      "CREATE TABLE IF NOT EXISTS studytemplates (process TEXT, instance INTEGER, process_step TEXTT)"
+    );
+    console.log("Database created", response1, response2);
   } catch (error) {
     console.error("Error creating database:", error);
   }
