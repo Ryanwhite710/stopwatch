@@ -6,9 +6,9 @@ interface DeleteDatabaseProps {
   onPress: () => void;
 }
 
-const DeleteDatabaseButton: React.FC<DeleteDatabaseProps> = ({ onPress, style }) => {
+const DeleteDatabaseButton: React.FC<DeleteDatabaseProps> = ({ onPress }) => {
   return (
-    <TouchableOpacity onPress={onPress} style={[styles.deleteDatabaseButton, style]}>
+    <TouchableOpacity onPress={onPress} style={styles.deleteDatabaseButton}>
       <FontAwesome name="trash" size={20} color="white" />
     </TouchableOpacity>
   );

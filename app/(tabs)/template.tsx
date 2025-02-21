@@ -1,12 +1,12 @@
-import { View, StyleSheet, Text, TouchableOpacity, FlatList, TextInput, ScrollView, } from 'react-native';
+import { View, StyleSheet, Text, FlatList, TextInput, ScrollView, } from 'react-native';
 import { SafeAreaProvider,SafeAreaView } from "react-native-safe-area-context";
 import { Stack } from 'expo-router';
 import Ionicons from "@expo/vector-icons/Ionicons";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
 import styles from '../constants/colors';
-import React { useState } from 'react';
+import React, { useState } from 'react';
 import { useSQLiteContext } from 'expo-sqlite';
-
+import DeleteDatabaseButton from '../components/ui/deleteDatabaseButton'
+import CreateTemplateButton from '../components/ui/createTemplateButton'
 
 export default function StudyTemplate() {
 
@@ -21,22 +21,18 @@ export default function StudyTemplate() {
   
   return (
     <SafeAreaProvider>
-      <SafeAreaView styles={styles.processStep}>
-        <View>
+      <SafeAreaView style={styles.processStep}>
           <Stack.Screen 
             options={{
               headerLeft: () => (
-                <TouchableOpacity onPress={undefined} styles={styles.button}>
-                  <FontAwesome name="trash" size={20} color="white"/>
-                </TouchableOpacity>
+                <DeleteDatabaseButton onPress={undefined}/>
               ),
               headerRight: () => (
-                <TouchableOpacity onPress={undefined} styles={styles.button}>
-                  <Ionicons name="create-outline" size={20} color="white"/>
-                </TouchableOpacity>
+                <CreateTemplateButton onPress={undefined}/>
               ),
             }}
           />
+        <View>
           <Text>Hello</Text>
         </View>
       </SafeAreaView>
